@@ -72,11 +72,15 @@ black .
 
 ### `/listeners`
 
-Every incoming request is routed to a "listener". Inside this directory, we group each listener based on the Slack Platform feature used, so `/listeners/events` handles incoming events, `/listeners/shortcuts` would handle incoming [Shortcuts](https://api.slack.com/interactivity/shortcuts) requests, and so on.
+Every incoming request is routed to a "listener". Inside this directory, we group each listener based on the Slack Platform feature used, so `/listeners/events` handles incoming events like messages sent to the app.
 
-The main implementation for this assistant app is in `listeners/assistant.py`, which contains the actual thread and messaging logic using Slack's Assistant framework.
+**Note**: The `listeners/events` folder is purely educational and demonstrates alternative implementation approaches. These listeners are **not registered** and are not used in the actual application. For the working implementation, refer to `listeners/assistant.py`.
 
-**Note**: The `listeners/events` folder is purely educational and demonstrates alternative implementation approaches. These listeners are **not registered** and are not used in the actual application. They serve as examples to show how you could implement similar functionality using event listeners instead of the Assistant framework. For the working implementation, refer to `listeners/assistant.py`.
+**`/listeners/assistant`**
+
+Configures the new Slack Assistant features, providing a dedicated side panel UI for users to interact with the AI chatbot. This includes:
+*  `@assistant.thread_started` - Manages when users start new assistant threads. 
+*  `@assistant.user_message` - Processes user messages in assistant threads and app DMs. **Replaces traditional DM handling as seen in** `/listeners/events/user_message.py`
 
 ## App Distribution / OAuth
 
