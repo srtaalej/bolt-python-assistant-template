@@ -74,6 +74,10 @@ black .
 
 Every incoming request is routed to a "listener". Inside this directory, we group each listener based on the Slack Platform feature used, so `/listeners/events` handles incoming events, `/listeners/shortcuts` would handle incoming [Shortcuts](https://api.slack.com/interactivity/shortcuts) requests, and so on.
 
+The main implementation for this assistant app is in `listeners/assistant.py`, which contains the actual thread and messaging logic using Slack's Assistant framework.
+
+**Note**: The `listeners/events` folder is purely educational and demonstrates alternative implementation approaches. These listeners are **not registered** and are not used in the actual application. They serve as examples to show how you could implement similar functionality using event listeners instead of the Assistant framework. For the working implementation, refer to `listeners/assistant.py`.
+
 ## App Distribution / OAuth
 
 Only implement OAuth if you plan to distribute your application across multiple workspaces. A separate `app_oauth.py` file can be found with relevant OAuth settings.
