@@ -1,4 +1,4 @@
-from .assistant import assistant
+from listeners.assistant import assistant
 
 
 def register_listeners(app):
