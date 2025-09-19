@@ -23,7 +23,10 @@ def _find_parent_message(
     )
     if response.get("messages"):
         for message in response.get("messages"):
-            if message.get("subtype") is None and message.get("user") == context.bot_user_id:
+            if (
+                message.get("subtype") is None
+                and message.get("user") == context.bot_user_id
+            ):
                 return message
 
 
@@ -34,7 +37,9 @@ def get_thread_context(
     channel_id: str,
     thread_ts: str,
 ) -> Optional[dict]:
-    parent_message = _find_parent_message(context=context, client=client, channel_id=channel_id, thread_ts=thread_ts)
+    parent_message = _find_parent_message(
+        context=context, client=client, channel_id=channel_id, thread_ts=thread_ts
+    )
     if parent_message is not None and parent_message.get("metadata") is not None:
         return parent_message["metadata"]["event_payload"]
 

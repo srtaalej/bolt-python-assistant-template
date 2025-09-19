@@ -5,7 +5,7 @@ from slack_bolt.context.get_thread_context import GetThreadContext
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-from .llm_caller import call_llm
+from ..llm_caller import call_llm
 
 # Refer to https://tools.slack.dev/bolt-python/concepts/assistant/ for more details
 assistant = Assistant()
@@ -72,13 +72,17 @@ def respond_in_assistant_thread(
             thread_context = get_thread_context()
             referred_channel_id = thread_context.get("channel_id")
             try:
-                channel_history = client.conversations_history(channel=referred_channel_id, limit=50)
+                channel_history = client.conversations_history(
+                    channel=referred_channel_id, limit=50
+                )
             except SlackApiError as e:
                 if e.response["error"] == "not_in_channel":
                     # If this app's bot user is not in the public channel,
                     # we'll try joining the channel and then calling the same API again
                     client.conversations_join(channel=referred_channel_id)
-                    channel_history = client.conversations_history(channel=referred_channel_id, limit=50)
+                    channel_history = client.conversations_history(
+                        channel=referred_channel_id, limit=50
+                    )
                 else:
                     raise e
 
