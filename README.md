@@ -72,21 +72,19 @@ black .
 
 ### `/listeners`
 
-Every incoming request is routed to a "listener". Inside this directory, we group each listener based on the Slack Platform feature used, so `/listeners/events` handles incoming events, `/listeners/shortcuts` would handle incoming [Shortcuts](https://docs.slack.dev/interactivity/implementing-shortcuts/) requests, and so on.
+Every incoming request is routed to a "listener". This directory groups each listener based on the Slack Platform feature used, so `/listeners/events` handles incoming events, `/listeners/shortcuts` would handle incoming [Shortcuts](https://docs.slack.dev/interactivity/implementing-shortcuts/) requests, and so on.
 
-**Note**: The `listeners/events` folder is purely educational and demonstrates alternative implementation approaches. These listeners are **not registered** and are not used in the actual application. For the working implementation, refer to `listeners/assistant.py`.
-
+:::info[The `listeners/events` folder is purely educational and demonstrates alternative approaches to implementation] 
+These listeners are **not registered** and are not used in the actual application. For the working implementation, refer to `listeners/assistant.py`.
 **`/listeners/assistant`**
 
 Configures the new Slack Assistant features, providing a dedicated side panel UI for users to interact with the AI chatbot. This module includes:
 
-`assistant.py`
-*  `@assistant.thread_started` - Receives an event when users start new app thread. 
-*  `@assistant.user_message` - Processes user messages in app threads or from the app **Chat** and **History** tab.
+`assistant.py`, which contains two listeners:
+*  The `@assistant.thread_started` listener receives an event when users start new app thread. 
+*  The `@assistant.user_message` listener processes user messages in app threads or from the app **Chat** and **History** tab.
 
-`llm_caller.py`
-* Handles OpenAI API integration and message formatting. Includes the `call_llm()` function that sends conversation threads to OpenAI's models and converts markdown responses to Slack-compatible formatting.
-
+`llm_caller.py`, which handles OpenAI API integration and message formatting. It includes the `call_llm()` function that sends conversation threads to OpenAI's models and converts markdown responses to Slack-compatible formatting.
 
 ## App Distribution / OAuth
 
