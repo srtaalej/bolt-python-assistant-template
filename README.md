@@ -1,6 +1,6 @@
 # AI App Template (Bolt for Python)
 
-This Bolt for Python template demonstrates how to build [AI Apps](https://api.slack.com/docs/apps/ai) in Slack.
+This Bolt for Python template demonstrates how to build [AI Apps](https://docs.slack.dev/ai/) in Slack.
 
 ## Setup
 Before getting started, make sure you have a development workspace where you have permissions to install apps. If you don’t have one setup, go ahead and [create one](https://slack.com/create).
