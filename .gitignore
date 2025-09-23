@@ -37,3 +37,4 @@ logs/
 *.db
 .pytype/
 .idea/
+.slack
