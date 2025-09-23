@@ -93,7 +93,6 @@ def respond_in_assistant_thread(
         stream_ts = stream_response["ts"]
         # use of this for loop is specific to openai response method
         for event in returned_message:
-            print(f"\n{event.type}")
             if event.type == "response.output_text.delta":
                 client.chat_appendStream(channel=channel_id, ts=stream_ts, markdown_text=f"{event.delta}")
             else:
