@@ -1,6 +1,7 @@
 --extra-index-url=https://test.pypi.org/simple/
-slack_sdk==3.36.0.dev1
+slack_sdk==3.36.0.dev2
 slack-bolt>=1.21,<2
+slack-cli-hooks<1.0.0
 
 # If you use a different LLM vendor, replace this dependency
 openai
