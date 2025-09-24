@@ -1,8 +1,9 @@
 import logging
-from typing import Any, List, Dict
+from typing import List, Dict
 from slack_bolt import Assistant, BoltContext, Say, SetSuggestedPrompts
 from slack_bolt.context.get_thread_context import GetThreadContext
 from slack_sdk import WebClient
+from slack_sdk.models.blocks import FeedbackButtonsElement, FeedbackButtonObject, ContextActionsBlock
 
 from ..llm_caller import call_llm
 
@@ -10,7 +11,7 @@ from ..llm_caller import call_llm
 assistant = Assistant()
 
 
-def create_feedback_block(user_id: str) -> Dict[str, Any]:
+def create_feedback_block(user_id: str) -> ContextActionsBlock:
     """
     Create feedback block with thumbs up/down buttons
 
@@ -20,23 +21,26 @@ def create_feedback_block(user_id: str) -> Dict[str, Any]:
     Returns:
         Block Kit context_actions block
     """
-    elements = [
-        {
-            "type": "feedback_buttons",
-            "action_id": "feedback",
-            "positive_button": {
-                "text": {"type": "plain_text", "text": "Good Response"},
-                "accessibility_label": "Submit positive feedback on this response",
-                "value": "good-feedback",
-            },
-            "negative_button": {
-                "text": {"type": "plain_text", "text": "Bad Response"},
-                "accessibility_label": "Submit negative feedback on this response",
-                "value": "bad-feedback",
-            },
-        }
+    block = [
+        ContextActionsBlock(
+            elements=[
+                FeedbackButtonsElement(
+                    action_id="feedback",
+                    positive_button=FeedbackButtonObject(
+                        text="Good Response",
+                        accessibility_label="Submit positive feedback on this response",
+                        value="good-feedback",
+                    ),
+                    negative_button=FeedbackButtonObject(
+                        text="Bad Response",
+                        accessibility_label="Submit negative feedback on this response",
+                        value="bad-feedback",
+                    ),
+                )
+            ]
+        )
     ]
-    return [{"type": "context_actions", "elements": elements}]
+    return block
 
 
 # This listener is invoked when a human user opened an assistant thread
@@ -113,20 +117,24 @@ def respond_in_assistant_thread(
             messages_in_thread.append({"role": role, "content": message["text"]})
 
         returned_message = call_llm(messages_in_thread)
+
         client.assistant_threads_setStatus(
             channel_id=channel_id, thread_ts=thread_ts, status="Bolt is typing", loading_messages=loading_messages
         )
+
         stream_response = client.chat_startStream(
             channel=channel_id,
             thread_ts=thread_ts,
         )
         stream_ts = stream_response["ts"]
+
         # use of this for loop is specific to openai response method
         for event in returned_message:
             if event.type == "response.output_text.delta":
                 client.chat_appendStream(channel=channel_id, ts=stream_ts, markdown_text=f"{event.delta}")
             else:
                 continue
+
         feedback_block = create_feedback_block(user_id=user_id)
         client.chat_stopStream(channel=channel_id, ts=stream_ts, blocks=feedback_block)
 
@@ -138,7 +146,6 @@ def respond_in_assistant_thread(
 # Handle feedback buttons (thumbs up/down)
 def handle_feedback(ack, body, client, logger):
     ack()
-
     try:
         message_ts = body["message"]["ts"]
         channel_id = body["channel"]["id"]
@@ -162,4 +169,4 @@ def handle_feedback(ack, body, client, logger):
 
         logger.debug(f"Handled feedback: type={feedback_type}, message_ts={message_ts}")
     except Exception as error:
-        logger.error(f"Error handling feedback action: {error}")
+        logger.error(f":warning: Something went wrong! {error}")
