@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict
+from typing import Any, List, Dict
 from slack_bolt import Assistant, BoltContext, Say, SetSuggestedPrompts
 from slack_bolt.context.get_thread_context import GetThreadContext
 from slack_sdk import WebClient
@@ -8,6 +8,35 @@ from ..llm_caller import call_llm
 
 # Refer to https://tools.slack.dev/bolt-python/concepts/assistant/ for more details
 assistant = Assistant()
+
+
+def create_feedback_block(user_id: str) -> Dict[str, Any]:
+    """
+    Create feedback block with thumbs up/down buttons
+
+    Args:
+        user_id: User ID for user-specific controls
+
+    Returns:
+        Block Kit context_actions block
+    """
+    elements = [
+        {
+            "type": "feedback_buttons",
+            "action_id": "feedback",
+            "positive_button": {
+                "text": {"type": "plain_text", "text": "Good Response"},
+                "accessibility_label": "Submit positive feedback on this response",
+                "value": "good-feedback",
+            },
+            "negative_button": {
+                "text": {"type": "plain_text", "text": "Bad Response"},
+                "accessibility_label": "Submit negative feedback on this response",
+                "value": "bad-feedback",
+            },
+        }
+    ]
+    return [{"type": "context_actions", "elements": elements}]
 
 
 # This listener is invoked when a human user opened an assistant thread
@@ -60,6 +89,7 @@ def respond_in_assistant_thread(
     say: Say,
 ):
     try:
+        user_id = payload["user"]
         channel_id = payload["channel"]
         thread_ts = payload["thread_ts"]
 
@@ -97,12 +127,39 @@ def respond_in_assistant_thread(
                 client.chat_appendStream(channel=channel_id, ts=stream_ts, markdown_text=f"{event.delta}")
             else:
                 continue
-
-        client.chat_stopStream(
-            channel=channel_id,
-            ts=stream_ts,
-        )
+        feedback_block = create_feedback_block(user_id=user_id)
+        client.chat_stopStream(channel=channel_id, ts=stream_ts, blocks=feedback_block)
 
     except Exception as e:
         logger.exception(f"Failed to handle a user message event: {e}")
         say(f":warning: Something went wrong! ({e})")
+
+
+# Handle feedback buttons (thumbs up/down)
+def handle_feedback(ack, body, client, logger):
+    ack()
+
+    try:
+        message_ts = body["message"]["ts"]
+        channel_id = body["channel"]["id"]
+        feedback_type = body["actions"][0]["value"]
+        is_positive = feedback_type == "good-feedback"
+
+        if is_positive:
+            client.chat_postEphemeral(
+                channel=channel_id,
+                user=body["user"]["id"],
+                thread_ts=message_ts,
+                text="We're glad you found this useful.",
+            )
+        else:
+            client.chat_postEphemeral(
+                channel=channel_id,
+                user=body["user"]["id"],
+                thread_ts=message_ts,
+                text="Sorry to hear that response wasn't up to par :slightly_frowning_face: Starting a new chat may help with AI mistakes and hallucinations.",
+            )
+
+        logger.debug(f"Handled feedback: type={feedback_type}, message_ts={message_ts}")
+    except Exception as error:
+        logger.error(f"Error handling feedback action: {error}")
