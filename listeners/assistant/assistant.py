@@ -1,11 +1,10 @@
 import logging
 from typing import List, Dict
-from slack_bolt import Assistant, BoltContext, Say, SetSuggestedPrompts, SetStatus
+from slack_bolt import Assistant, BoltContext, Say, SetSuggestedPrompts
 from slack_bolt.context.get_thread_context import GetThreadContext
 from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
 
-from .llm_caller import call_llm
+from ..llm_caller import call_llm
 
 # Refer to https://tools.slack.dev/bolt-python/concepts/assistant/ for more details
 assistant = Assistant()
@@ -57,39 +56,20 @@ def respond_in_assistant_thread(
     payload: dict,
     logger: logging.Logger,
     context: BoltContext,
-    set_status: SetStatus,
-    get_thread_context: GetThreadContext,
     client: WebClient,
     say: Say,
 ):
     try:
-        user_message = payload["text"]
-        set_status("is typing...")
+        channel_id = payload["channel"]
+        thread_ts = payload["thread_ts"]
 
-        if user_message == "Can you generate a brief summary of the referred channel?":
-            # the logic here requires the additional bot scopes:
-            # channels:join, channels:history, groups:history
-            thread_context = get_thread_context()
-            referred_channel_id = thread_context.get("channel_id")
-            try:
-                channel_history = client.conversations_history(channel=referred_channel_id, limit=50)
-            except SlackApiError as e:
-                if e.response["error"] == "not_in_channel":
-                    # If this app's bot user is not in the public channel,
-                    # we'll try joining the channel and then calling the same API again
-                    client.conversations_join(channel=referred_channel_id)
-                    channel_history = client.conversations_history(channel=referred_channel_id, limit=50)
-                else:
-                    raise e
-
-            prompt = f"Can you generate a brief summary of these messages in a Slack channel <#{referred_channel_id}>?\n\n"
-            for message in reversed(channel_history.get("messages")):
-                if message.get("user") is not None:
-                    prompt += f"\n<@{message['user']}> says: {message['text']}\n"
-            messages_in_thread = [{"role": "user", "content": prompt}]
-            returned_message = call_llm(messages_in_thread)
-            say(returned_message)
-            return
+        loading_messages = [
+            "Teaching the hamsters to type faster…",
+            "Untangling the internet cables…",
+            "Consulting the office goldfish…",
+            "Polishing up the response just for you…",
+            "Convincing the AI to stop overthinking…",
+        ]
 
         replies = client.conversations_replies(
             channel=context.channel_id,
@@ -101,8 +81,27 @@ def respond_in_assistant_thread(
         for message in replies["messages"]:
             role = "user" if message.get("bot_id") is None else "assistant"
             messages_in_thread.append({"role": role, "content": message["text"]})
+
         returned_message = call_llm(messages_in_thread)
-        say(returned_message)
+        client.assistant_threads_setStatus(
+            channel_id=channel_id, thread_ts=thread_ts, status="Bolt is typing", loading_messages=loading_messages
+        )
+        stream_response = client.chat_startStream(
+            channel=channel_id,
+            thread_ts=thread_ts,
+        )
+        stream_ts = stream_response["ts"]
+        # use of this for loop is specific to openai response method
+        for event in returned_message:
+            if event.type == "response.output_text.delta":
+                client.chat_appendStream(channel=channel_id, ts=stream_ts, markdown_text=f"{event.delta}")
+            else:
+                continue
+
+        client.chat_stopStream(
+            channel=channel_id,
+            ts=stream_ts,
+        )
 
     except Exception as e:
         logger.exception(f"Failed to handle a user message event: {e}")

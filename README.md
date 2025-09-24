@@ -1,6 +1,6 @@
-# App Agent & Assistant Template (Bolt for Python)
+# AI App Template (Bolt for Python)
 
-This Bolt for Python template demonstrates how to build [Agents & Assistants](https://api.slack.com/docs/apps/ai) in Slack.
+This Bolt for Python template demonstrates how to build [AI Apps](https://docs.slack.dev/ai/) in Slack.
 
 ## Setup
 Before getting started, make sure you have a development workspace where you have permissions to install apps. If you don’t have one setup, go ahead and [create one](https://slack.com/create).
@@ -72,7 +72,20 @@ black .
 
 ### `/listeners`
 
-Every incoming request is routed to a "listener". Inside this directory, we group each listener based on the Slack Platform feature used, so `/listeners/events` handles incoming events, `/listeners/shortcuts` would handle incoming [Shortcuts](https://api.slack.com/interactivity/shortcuts) requests, and so on.
+Every incoming request is routed to a "listener". This directory groups each listener based on the Slack Platform feature used, so `/listeners/events` handles incoming events, `/listeners/shortcuts` would handle incoming [Shortcuts](https://docs.slack.dev/interactivity/implementing-shortcuts/) requests, and so on.
+
+:::info[The `listeners/events` folder is purely educational and demonstrates alternative approaches to implementation] 
+These listeners are **not registered** and are not used in the actual application. For the working implementation, refer to `listeners/assistant.py`.
+
+**`/listeners/assistant`**
+
+Configures the new Slack Assistant features, providing a dedicated side panel UI for users to interact with the AI chatbot. This module includes:
+
+`assistant.py`, which contains two listeners:
+*  The `@assistant.thread_started` listener receives an event when users start new app thread. 
+*  The `@assistant.user_message` listener processes user messages in app threads or from the app **Chat** and **History** tab.
+
+`llm_caller.py`, which handles OpenAI API integration and message formatting. It includes the `call_llm()` function that sends conversation threads to OpenAI's models.
 
 ## App Distribution / OAuth
 
